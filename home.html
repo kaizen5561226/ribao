@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>首页</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container home-container">
+    <div class="avatar">👤</div>
+    <div class="phone-display" id="phoneDisplay">--</div>
+    <p class="welcome">欢迎回来！您已成功登录</p>
+    <button class="btn-logout" onclick="logout()">退出登录</button>
+  </div>
+
+  <script>
+    // 检查登录状态
+    const token = localStorage.getItem('token');
+    const phone = localStorage.getItem('phone');
+    if (!token || !phone) {
+      window.location.href = 'index.html';
+    } else {
+      // 显示手机号（中间隐藏）
+      document.getElementById('phoneDisplay').textContent =
+        phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('phone');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

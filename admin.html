@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白名单管理</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container admin-container">
+    <h1>白名单管理</h1>
+
+    <div class="add-row">
+      <input type="tel" id="newPhone" placeholder="输入手机号添加到白名单" maxlength="11">
+      <button onclick="addPhone()">添加</button>
+    </div>
+
+    <table class="whitelist-table">
+      <thead>
+        <tr>
+          <th>序号</th>
+          <th>手机号码</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="whitelistBody">
+      </tbody>
+    </table>
+
+    <div class="empty-tip" id="emptyTip" style="display:none;">暂无白名单手机号</div>
+
+    <div class="message" id="adminMessage"></div>
+
+    <a href="index.html" class="admin-link">← 返回登录页</a>
+  </div>
+
+  <script>
+    // 初始化默认白名单
+    if (!localStorage.getItem('whitelist')) {
+      localStorage.setItem('whitelist', JSON.stringify(['13800138000', '13900139000']));
+    }
+
+    function getWhitelist() {
+      return JSON.parse(localStorage.getItem('whitelist') || '[]');
+    }
+
+    function saveWhitelist(list) {
+      localStorage.setItem('whitelist', JSON.stringify(list));
+    }
+
+    function loadWhitelist() {
+      const phones = getWhitelist();
+      const tbody = document.getElementById('whitelistBody');
+      const emptyTip = document.getElementById('emptyTip');
+
+      if (phones.length === 0) {
+        tbody.innerHTML = '';
+        emptyTip.style.display = 'block';
+        return;
+      }
+
+      emptyTip.style.display = 'none';
+      tbody.innerHTML = phones.map(function(phone, index) {
+        return '<tr><td>' + (index + 1) + '</td><td>' + phone + '</td><td><button class="btn-delete" onclick="deletePhone(\'' + phone + '\')">删除</button></td></tr>';
+      }).join('');
+    }
+
+    function addPhone() {
+      const input = document.getElementById('newPhone');
+      const phone = input.value.trim();
+
+      if (!/^1\d{10}$/.test(phone)) {
+        showAdminMessage('请输入正确的11位手机号码', 'error');
+        return;
+      }
+
+      const list = getWhitelist();
+      if (list.includes(phone)) {
+        showAdminMessage('该手机号已在白名单中', 'error');
+        return;
+      }
+
+      list.push(phone);
+      saveWhitelist(list);
+      input.value = '';
+      showAdminMessage('添加成功', 'success');
+      loadWhitelist();
+    }
+
+    function deletePhone(phone) {
+      if (!confirm('确定要删除手机号 ' + phone + ' 吗？')) return;
+
+      const list = getWhitelist();
+      const index = list.indexOf(phone);
+      if (index > -1) {
+        list.splice(index, 1);
+        saveWhitelist(list);
+        showAdminMessage('删除成功', 'success');
+        loadWhitelist();
+      }
+    }
+
+    function showAdminMessage(text, type) {
+      const el = document.getElementById('adminMessage');
+      el.textContent = text;
+      el.className = 'message ' + type;
+      setTimeout(function() { el.className = 'message'; }, 3000);
+    }
+
+    document.getElementById('newPhone').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') addPhone();
+    });
+
+    loadWhitelist();
+  </script>
+</body>
+</html>

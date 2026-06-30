@@ -1,0 +1,448 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工时统计系统</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    .page { display: none; }
+    .page.active { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- ====== 登录页 ====== -->
+<div id="pageLogin" class="page active">
+  <div class="container">
+    <h1>工时统计系统</h1>
+    <p class="subtitle">请登录您的账号</p>
+    <div class="form-group">
+      <label>姓名</label>
+      <input type="text" id="loginName" placeholder="请输入姓名">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="loginPassword" placeholder="请输入密码（默认123456）">
+    </div>
+    <button class="btn-login" onclick="doLogin()">登 录</button>
+    <div class="message" id="loginMessage"></div>
+    <div class="debug-info">
+      <span>管理员请点击</span>
+      <button class="btn-reset" onclick="showAdmin()">后台管理</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 首页 - 工时统计 ====== -->
+<div id="pageHome" class="page">
+  <div class="container stats-container">
+    <div class="stats-header">
+      <div class="stats-user">
+        <div class="avatar-sm">👤</div>
+        <span id="displayUser">--</span>
+      </div>
+      <div class="stats-date-info">
+        <span id="currentDate"></span>
+      </div>
+      <button class="btn-logout" onclick="logout()">退出</button>
+    </div>
+    <div class="stats-add-row">
+      <div class="search-wrapper">
+        <input type="text" id="itemSearch" placeholder="搜索工作内容（如：工单、培训...）" autocomplete="off">
+        <div class="search-dropdown" id="searchDropdown"></div>
+        <div class="search-hint" id="searchHint"></div>
+      </div>
+      <input type="number" id="itemQty" placeholder="数量/次数" step="0.01" min="0" class="qty-input">
+      <button class="btn-add-item" onclick="addStatsRow()">添加</button>
+    </div>
+    <div class="table-wrapper">
+      <table class="stats-table">
+        <thead><tr>
+          <th class="col-index">序号</th>
+          <th class="col-date">日期</th>
+          <th class="col-user">姓名</th>
+          <th class="col-cat2">服务大类</th>
+          <th class="col-cat3">服务子类</th>
+          <th class="col-name">工作内容</th>
+          <th class="col-output">交付产出</th>
+          <th class="col-hours">量纲标准工时h</th>
+          <th class="col-qty">数量/次数</th>
+          <th class="col-actual">实际工时</th>
+          <th class="col-merged">合并实际工时</th>
+          <th class="col-action">操作</th>
+        </tr></thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+    </div>
+    <div class="stats-summary" id="statsSummary">
+      <span>合并实际工时合计：<strong id="totalHours">0.00</strong> h</span>
+      <span>共 <strong id="totalItems">0</strong> 项</span>
+      <div class="summary-actions">
+        <button class="btn-export" onclick="exportToXlsx()">导出Excel</button>
+        <button class="btn-clear" onclick="clearStats()">清空</button>
+      </div>
+    </div>
+    <div class="message" id="homeMessage"></div>
+  </div>
+</div>
+
+<!-- ====== 后台管理页 ====== -->
+<div id="pageAdmin" class="page">
+  <div class="container admin-container">
+    <h1>后台管理</h1>
+    
+    <h3 style="margin-bottom:12px;color:#555;">账号管理</h3>
+    <div class="add-row" style="margin-bottom:16px;">
+      <input type="text" id="newUserName" placeholder="姓名" style="flex:1;">
+      <input type="text" id="newUserPassword" placeholder="密码（默认123456）" style="flex:1;">
+      <button onclick="addUser()">添加</button>
+    </div>
+    <table class="whitelist-table">
+      <thead><tr><th>序号</th><th>姓名</th><th>密码</th><th>操作</th></tr></thead>
+      <tbody id="userBody"></tbody>
+    </table>
+    <div class="empty-tip" id="emptyTip">暂无账号，请添加</div>
+    <div class="message" id="adminMessage"></div>
+    <a href="#" onclick="showLogin()" class="admin-link">← 返回登录页</a>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ============ 状态变量 ============
+var users = [{name: '管理员', password: '123456'}];
+var statsRows = [];
+var loggedInUser = '';
+var selectedItem = null;
+
+// ============ 工具函数 ============
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;');
+}
+
+function formatDate(d) {
+  return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+
+// ============ 页面切换 ============
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function showLogin() { showPage('pageLogin'); }
+function showAdmin() { showPage('pageAdmin'); loadUsers(); }
+function showHome() { showPage('pageHome'); }
+
+// ============ 登录逻辑 ============
+function showMsg(id, text, type) {
+  var el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'message ' + (type || '');
+}
+
+function doLogin() {
+  var name = document.getElementById('loginName').value.trim();
+  var password = document.getElementById('loginPassword').value.trim();
+  if (!name || !password) {
+    showMsg('loginMessage', '请填写姓名和密码', 'error');
+    return;
+  }
+  var found = false;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].name === name && users[i].password === password) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    showMsg('loginMessage', '姓名或密码错误', 'error');
+    return;
+  }
+  loggedInUser = name;
+  document.getElementById('displayUser').textContent = loggedInUser;
+  document.getElementById('currentDate').textContent = formatDate(new Date());
+  showHome();
+}
+
+function logout() {
+  loggedInUser = '';
+  showLogin();
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPassword').value = '';
+}
+
+// ============ 账号管理 ============
+function loadUsers() {
+  var tbody = document.getElementById('userBody');
+  var emptyTip = document.getElementById('emptyTip');
+  if (users.length === 0) {
+    tbody.innerHTML = '';
+    emptyTip.style.display = 'block';
+    return;
+  }
+  emptyTip.style.display = 'none';
+  tbody.innerHTML = users.map(function(u, i) {
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td><textarea class="inline-text" rows="1" onchange="updateUserName(' + i + ', this.value)">' + escapeHtml(u.name) + '</textarea></td>' +
+      '<td>🐮🐮🐮🐮🐮🐮 <button class="btn-small" onclick="changePassword(' + i + ')">改密</button></td>' +
+      '<td><button class="btn-delete" onclick="deleteUser(' + i + ')">删除</button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function addUser() {
+  var nameInput = document.getElementById('newUserName');
+  var passInput = document.getElementById('newUserPassword');
+  var name = nameInput.value.trim();
+  var password = passInput.value.trim() || '123456';
+  if (!name) { showMsg('adminMessage', '请输入姓名', 'error'); return; }
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].name === name) { showMsg('adminMessage', '该姓名已存在', 'error'); return; }
+  }
+  users.push({name: name, password: password});
+  nameInput.value = '';
+  passInput.value = '';
+  showMsg('adminMessage', '添加成功', 'success');
+  loadUsers();
+}
+
+function deleteUser(index) {
+  if (users.length <= 1) { showMsg('adminMessage', '至少保留一个账号', 'error'); return; }
+  if (!confirm('确定要删除账号 "' + users[index].name + '" 吗？')) return;
+  users.splice(index, 1);
+  showMsg('adminMessage', '删除成功', 'success');
+  loadUsers();
+}
+
+function updateUserName(index, name) {
+  name = name.trim();
+  if (!name) { loadUsers(); showMsg('adminMessage', '姓名不能为空', 'error'); return; }
+  users[index].name = name;
+  showMsg('adminMessage', '姓名已更新', 'success');
+}
+
+function changePassword(index) {
+  var newPass = prompt('请输入新密码（当前账号: ' + users[index].name + '）');
+  if (!newPass || newPass.length < 4) { showMsg('adminMessage', '密码至少4位', 'error'); return; }
+  users[index].password = newPass;
+  showMsg('adminMessage', '密码已更新', 'success');
+}
+
+// ============ 工时统计 ============
+var searchInput = document.getElementById('itemSearch');
+var searchHint = document.getElementById('searchHint');
+var searchDropdown = document.getElementById('searchDropdown');
+
+// 搜索输入
+searchInput.addEventListener('input', function() {
+  var keyword = this.value.trim().toLowerCase();
+  if (!keyword || !window.workItems) {
+    searchHint.textContent = '';
+    searchDropdown.innerHTML = '';
+    searchDropdown.style.display = 'none';
+    selectedItem = null;
+    return;
+  }
+  var results = window.workItems.filter(function(item) {
+    return item.name.toLowerCase().indexOf(keyword) !== -1 ||
+           item.cat3.toLowerCase().indexOf(keyword) !== -1;
+  }).slice(0, 8);
+  if (results.length === 0) {
+    searchHint.textContent = '无匹配结果';
+    searchDropdown.innerHTML = '';
+    searchDropdown.style.display = 'none';
+    selectedItem = null;
+  } else {
+    searchHint.innerHTML = '找到 ' + results.length + ' 项：<strong>' + escapeHtml(results[0].name) + '</strong>（' + results[0].hours + 'h）';
+    searchDropdown.innerHTML = results.map(function(item) {
+      var safeName = item.name.replace(/'/g, "\\'");
+      return '<div class="dropdown-item" onclick="selectItem(\'' + safeName + '\')">' +
+        '<div class="item-main"><span class="item-name">' + escapeHtml(item.name) + '</span>' +
+        '<span class="item-cat">' + escapeHtml(item.cat2) + ' / ' + escapeHtml(item.cat3) + '</span></div>' +
+        '<span class="item-hours">' + item.hours + 'h</span></div>';
+    }).join('');
+    searchDropdown.style.display = 'block';
+  }
+});
+
+searchInput.addEventListener('blur', function() {
+  setTimeout(function() { searchDropdown.style.display = 'none'; }, 200);
+});
+
+searchInput.addEventListener('focus', function() {
+  if (this.value.trim() && window.workItems) {
+    searchInput.dispatchEvent(new Event('input'));
+  }
+});
+
+function selectItem(name) {
+  searchInput.value = name;
+  searchDropdown.innerHTML = '';
+  searchDropdown.style.display = 'none';
+  selectedItem = null;
+  // 查找完整数据
+  if (window.workItems) {
+    var found = window.workItems.filter(function(item) { return item.name === name; });
+    if (found.length > 0) selectedItem = found[0];
+  }
+  searchHint.textContent = '已选择: ' + name;
+  document.getElementById('itemQty').focus();
+}
+
+function addStatsRow() {
+  var name = searchInput.value.trim();
+  if (!name) { showMsg('homeMessage', '请搜索并选择工作内容', 'error'); return; }
+  var qty = parseFloat(document.getElementById('itemQty').value);
+  if (isNaN(qty) || qty <= 0) { showMsg('homeMessage', '请输入有效的数量/次数', 'error'); return; }
+  if (!window.workItems || !window.workItems.length) { showMsg('homeMessage', '工时数据未加载', 'error'); return; }
+  
+  // 优先用已选中的，否则模糊匹配
+  var item = selectedItem;
+  if (!item) {
+    var found = window.workItems.filter(function(i) { return i.name.indexOf(name) !== -1; });
+    if (found.length === 0) { showMsg('homeMessage', '未找到匹配的工作项', 'error'); return; }
+    item = found[0];
+  }
+  
+  if (!loggedInUser) loggedInUser = '--';
+  
+  var rowUserName = loggedInUser;
+  
+  var stdHours = item.hours;
+  var actual = Math.round(stdHours * qty * 100) / 100;
+  var today = formatDate(new Date());
+  
+  statsRows.push({
+    date: today,
+    userName: rowUserName,
+    cat2: item.cat2,
+    cat3: item.cat3,
+    name: item.name,
+    output: item.output || '',
+    hours: stdHours,
+    qty: qty,
+    actualHours: actual,
+    mergedHours: actual
+  });
+  
+  document.getElementById('itemQty').value = '';
+  searchInput.value = '';
+  searchHint.textContent = '';
+  selectedItem = null;
+  renderStats();
+}
+
+function renderStats() {
+  var tbody = document.getElementById('statsBody');
+  if (statsRows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#bbb;padding:30px;">暂无数据，请添加工时记录</td></tr>';
+    document.getElementById('totalHours').textContent = '0.00';
+    document.getElementById('totalItems').textContent = '0';
+    return;
+  }
+  
+  tbody.innerHTML = statsRows.map(function(row, i) {
+    return '<tr>' +
+      '<td class="col-index">' + (i+1) + '</td>' +
+      '<td class="col-date"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'date\', this.value)">' + escapeHtml(row.date) + '</textarea></td>' +
+      '<td class="col-user"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'userName\', this.value)">' + escapeHtml(row.userName) + '</textarea></td>' +
+      '<td class="col-cat2">' + escapeHtml(row.cat2) + '</td>' +
+      '<td class="col-cat3">' + escapeHtml(row.cat3) + '</td>' +
+      '<td class="col-name"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'name\', this.value)">' + escapeHtml(row.name) + '</textarea></td>' +
+      '<td class="col-output"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'output\', this.value)">' + escapeHtml(row.output) + '</textarea></td>' +
+      '<td class="col-hours">' + row.hours + '</td>' +
+      '<td class="col-qty"><input type="number" class="inline-qty" value="' + row.qty + '" step="0.01" min="0" onchange="updateQty(' + i + ', this.value)"></td>' +
+      '<td class="col-actual"><input type="number" class="inline-qty" value="' + row.actualHours + '" step="0.01" min="0" onchange="updateActualHours(' + i + ', this.value)"></td>' +
+      '<td class="col-merged"><input type="number" class="inline-qty" value="' + row.mergedHours + '" step="0.01" min="0" onchange="updateMergedHours(' + i + ', this.value)"></td>' +
+      '<td class="col-action"><button class="btn-delete" onclick="deleteRow(' + i + ')">删除</button></td>' +
+      '</tr>';
+  }).join('');
+  
+  updateTotals();
+}
+
+function updateTotals() {
+  var mergedSum = statsRows.reduce(function(s, r) { return s + r.mergedHours; }, 0);
+  document.getElementById('totalHours').textContent = mergedSum.toFixed(2);
+  document.getElementById('totalItems').textContent = statsRows.length;
+}
+
+function updateRowField(index, field, value) {
+  statsRows[index][field] = value;
+  updateTotals();
+}
+
+function updateQty(index, val) {
+  var qty = parseFloat(val);
+  if (isNaN(qty) || qty <= 0) return;
+  var row = statsRows[index];
+  row.qty = qty;
+  var autoVal = Math.round(row.hours * qty * 100) / 100;
+  row.actualHours = autoVal;
+  row.mergedHours = autoVal;
+  renderStats();
+}
+
+function updateActualHours(index, val) {
+  var v = parseFloat(val);
+  if (isNaN(v) || v < 0) return;
+  statsRows[index].actualHours = Math.round(v * 100) / 100;
+  updateTotals();
+}
+
+function updateMergedHours(index, val) {
+  var v = parseFloat(val);
+  if (isNaN(v) || v < 0) return;
+  statsRows[index].mergedHours = Math.round(v * 100) / 100;
+  updateTotals();
+}
+
+function deleteRow(index) {
+  statsRows.splice(index, 1);
+  renderStats();
+}
+
+function clearStats() {
+  if (statsRows.length === 0) return;
+  if (!confirm('确定要清空所有记录吗？')) return;
+  statsRows = [];
+  renderStats();
+}
+
+// 初始化
+renderStats();
+
+// ============ 导出Excel ============
+function exportToXlsx() {
+  if (statsRows.length === 0) { showMsg('homeMessage', '没有数据可导出', 'error'); return; }
+  if (typeof XLSX === 'undefined') { showMsg('homeMessage', '导出库加载中，请刷新页面后重试', 'error'); return; }
+  
+  var headers = ['#', '日期', '姓名', '服务大类', '服务子类', '工作内容', '交付产出', '量纲标准工时h', '数量/次数', '实际工时', '合并实际工时'];
+  
+  var data = statsRows.map(function(row, i) {
+    return [i+1, row.date, row.userName, row.cat2, row.cat3, row.name, row.output, row.hours, row.qty, row.actualHours, row.mergedHours];
+  });
+  
+  var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
+  
+  // 设置列宽
+  ws['!cols'] = [
+    {wch:4},{wch:14},{wch:10},{wch:16},{wch:20},
+    {wch:30},{wch:30},{wch:12},{wch:10},{wch:10},{wch:12}
+  ];
+  
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '工时统计');
+  
+  var now = new Date();
+  var fileName = '工时统计_' + now.getFullYear() + (now.getMonth()+1) + now.getDate() + '.xlsx';
+  XLSX.writeFile(wb, fileName);
+  showMsg('homeMessage', '导出成功: ' + fileName, 'success');
+}
+</script>
+</body>
+</html>
