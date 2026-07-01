@@ -88,6 +88,25 @@
   </div>
 </div>
 
+<!-- ====== 后台管理 - 管理员登录 ====== -->
+<div id="pageAdminLogin" class="page">
+  <div class="container" style="max-width:400px;padding-top:100px;">
+    <h1>管理员验证</h1>
+    <p class="subtitle">请输入管理员账号和密码</p>
+    <div class="form-group">
+      <label>管理员账号</label>
+      <input type="text" id="adminLoginName" placeholder="请输入管理员账号">
+    </div>
+    <div class="form-group">
+      <label>管理员密码</label>
+      <input type="password" id="adminLoginPassword" placeholder="请输入管理员密码">
+    </div>
+    <button class="btn-login" onclick="doAdminLogin()">验证</button>
+    <div class="message" id="adminLoginMessage"></div>
+    <a href="#" onclick="showLogin()" class="admin-link">← 返回登录页</a>
+  </div>
+</div>
+
 <!-- ====== 后台管理页 ====== -->
 <div id="pageAdmin" class="page">
   <div class="container admin-container">
@@ -105,7 +124,7 @@
     </table>
     <div class="empty-tip" id="emptyTip">暂无账号，请添加</div>
     <div class="message" id="adminMessage"></div>
-    <a href="#" onclick="showLogin()" class="admin-link">← 返回登录页</a>
+    <a href="#" onclick="lockAdmin()" class="admin-link">← 锁定并返回登录页</a>
   </div>
 </div>
 
@@ -132,9 +151,39 @@ function showPage(id) {
   document.getElementById(id).classList.add('active');
 }
 
+var adminUnlocked = false;
+
 function showLogin() { showPage('pageLogin'); }
-function showAdmin() { showPage('pageAdmin'); loadUsers(); }
+function showAdmin() {
+  if (adminUnlocked) {
+    showPage('pageAdmin');
+    loadUsers();
+  } else {
+    showPage('pageAdminLogin');
+    document.getElementById('adminLoginName').value = '';
+    document.getElementById('adminLoginPassword').value = '';
+    document.getElementById('adminLoginMessage').textContent = '';
+  }
+}
 function showHome() { showPage('pageHome'); }
+
+function doAdminLogin() {
+  var name = document.getElementById('adminLoginName').value.trim();
+  var pass = document.getElementById('adminLoginPassword').value.trim();
+  if (name === 'kaizen' && pass === '13535199840') {
+    adminUnlocked = true;
+    showPage('pageAdmin');
+    loadUsers();
+    document.getElementById('adminLoginMessage').textContent = '';
+  } else {
+    showMsg('adminLoginMessage', '管理员账号或密码错误', 'error');
+  }
+}
+
+function lockAdmin() {
+  adminUnlocked = false;
+  showLogin();
+}
 
 // ============ 登录逻辑 ============
 function showMsg(id, text, type) {
