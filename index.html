@@ -77,6 +77,7 @@
       <span>共 <strong id="totalItems">0</strong> 项</span>
       <div class="summary-actions">
         <button class="btn-export" onclick="exportToXlsx()">导出Excel</button>
+        <button class="btn-save" onclick="saveData();showMsg('homeMessage','数据已保存','success')">保存</button>
         <button class="btn-clear" onclick="clearStats()">清空</button>
       </div>
     </div>
@@ -119,6 +120,9 @@
     </table>
     <div class="empty-tip" id="emptyTip">暂无账号，请添加</div>
     <div class="message" id="adminMessage"></div>
+    <div style="margin:12px 0;">
+      <button class="btn-save" onclick="saveData();showMsg('adminMessage','数据已保存','success')">保存数据</button>
+    </div>
     <a href="#" onclick="lockAdmin()" class="admin-link">← 锁定并返回登录页</a>
   </div>
 </div>
@@ -276,7 +280,6 @@ function addUser() {
   nameInput.value = '';
   showMsg('adminMessage', '添加成功', 'success');
   loadUsers();
-  saveData();
 }
 
 function deleteUser(index) {
@@ -285,7 +288,6 @@ function deleteUser(index) {
   users.splice(index, 1);
   showMsg('adminMessage', '删除成功', 'success');
   loadUsers();
-  saveData();
 }
 
 function updateUserName(index, name) {
@@ -293,7 +295,6 @@ function updateUserName(index, name) {
   if (!name) { loadUsers(); showMsg('adminMessage', '姓名不能为空', 'error'); return; }
   users[index].name = name;
   showMsg('adminMessage', '姓名已更新', 'success');
-  saveData();
 }
 
 // ============ 工时统计 ============
@@ -398,7 +399,6 @@ function addStatsRow() {
   searchHint.textContent = '';
   selectedItem = null;
   renderStats();
-  saveData();
 }
 
 function renderStats() {
@@ -439,7 +439,6 @@ function updateTotals() {
 function updateRowField(index, field, value) {
   statsRows[index][field] = value;
   updateTotals();
-  saveData();
 }
 
 function updateQty(index, val) {
@@ -451,7 +450,6 @@ function updateQty(index, val) {
   row.actualHours = autoVal;
   row.mergedHours = autoVal;
   renderStats();
-  saveData();
 }
 
 function updateActualHours(index, val) {
@@ -459,7 +457,6 @@ function updateActualHours(index, val) {
   if (isNaN(v) || v < 0) return;
   statsRows[index].actualHours = Math.round(v * 100) / 100;
   updateTotals();
-  saveData();
 }
 
 function updateMergedHours(index, val) {
@@ -467,13 +464,11 @@ function updateMergedHours(index, val) {
   if (isNaN(v) || v < 0) return;
   statsRows[index].mergedHours = Math.round(v * 100) / 100;
   updateTotals();
-  saveData();
 }
 
 function deleteRow(index) {
   statsRows.splice(index, 1);
   renderStats();
-  saveData();
 }
 
 function clearStats() {
@@ -481,7 +476,6 @@ function clearStats() {
   if (!confirm('确定要清空所有记录吗？')) return;
   statsRows = [];
   renderStats();
-  saveData();
 }
 
 // 初始化
