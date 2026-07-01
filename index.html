@@ -140,6 +140,36 @@ function formatDate(d) {
   return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
 }
 
+// ============ 数据持久化（通过服务器 API） ============
+function saveData() {
+  var data = JSON.stringify({ users: users, statsRows: statsRows });
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/save', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(data);
+}
+
+function loadData(callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/load', true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (data.users && data.users.length > 0) {
+          users = data.users;
+        }
+        if (data.statsRows) {
+          statsRows = data.statsRows;
+        }
+      } catch(e) {}
+    }
+    if (callback) callback();
+  };
+  xhr.onerror = function() { if (callback) callback(); };
+  xhr.send();
+}
+
 // ============ 页面切换 ============
 function showPage(id) {
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -207,7 +237,7 @@ function doLogin() {
   loggedInUser = name;
   document.getElementById('displayUser').textContent = loggedInUser;
   document.getElementById('currentDate').textContent = formatDate(new Date());
-  showHome();
+  loadData(function() { renderStats(); showHome(); });
 }
 
 function logout() {
@@ -246,6 +276,7 @@ function addUser() {
   nameInput.value = '';
   showMsg('adminMessage', '添加成功', 'success');
   loadUsers();
+  saveData();
 }
 
 function deleteUser(index) {
@@ -254,6 +285,7 @@ function deleteUser(index) {
   users.splice(index, 1);
   showMsg('adminMessage', '删除成功', 'success');
   loadUsers();
+  saveData();
 }
 
 function updateUserName(index, name) {
@@ -261,6 +293,7 @@ function updateUserName(index, name) {
   if (!name) { loadUsers(); showMsg('adminMessage', '姓名不能为空', 'error'); return; }
   users[index].name = name;
   showMsg('adminMessage', '姓名已更新', 'success');
+  saveData();
 }
 
 // ============ 工时统计 ============
@@ -365,6 +398,7 @@ function addStatsRow() {
   searchHint.textContent = '';
   selectedItem = null;
   renderStats();
+  saveData();
 }
 
 function renderStats() {
@@ -405,6 +439,7 @@ function updateTotals() {
 function updateRowField(index, field, value) {
   statsRows[index][field] = value;
   updateTotals();
+  saveData();
 }
 
 function updateQty(index, val) {
@@ -416,6 +451,7 @@ function updateQty(index, val) {
   row.actualHours = autoVal;
   row.mergedHours = autoVal;
   renderStats();
+  saveData();
 }
 
 function updateActualHours(index, val) {
@@ -423,6 +459,7 @@ function updateActualHours(index, val) {
   if (isNaN(v) || v < 0) return;
   statsRows[index].actualHours = Math.round(v * 100) / 100;
   updateTotals();
+  saveData();
 }
 
 function updateMergedHours(index, val) {
@@ -430,11 +467,13 @@ function updateMergedHours(index, val) {
   if (isNaN(v) || v < 0) return;
   statsRows[index].mergedHours = Math.round(v * 100) / 100;
   updateTotals();
+  saveData();
 }
 
 function deleteRow(index) {
   statsRows.splice(index, 1);
   renderStats();
+  saveData();
 }
 
 function clearStats() {
@@ -442,6 +481,7 @@ function clearStats() {
   if (!confirm('确定要清空所有记录吗？')) return;
   statsRows = [];
   renderStats();
+  saveData();
 }
 
 // 初始化
