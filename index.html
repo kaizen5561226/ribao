@@ -144,16 +144,21 @@ function formatDate(d) {
   return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
 }
 
-// ============ 数据持久化（通过服务器 API） ============
+// ============ 数据持久化（服务器 API + localStorage 回退） ============
 function saveData() {
-  var data = JSON.stringify({ users: users, statsRows: statsRows });
+  var data = { users: users, statsRows: statsRows };
+  var json = JSON.stringify(data);
+  // 1. 存到 localStorage（GitHub Pages 模式）
+  try { localStorage.setItem('ribao_data', json); } catch(e) {}
+  // 2. 尝试存到服务器（Node.js 模式）
   var xhr = new XMLHttpRequest();
   xhr.open('POST', '/api/save', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.send(data);
+  xhr.send(json);
 }
 
 function loadData(callback) {
+  // 先尝试从服务器加载（Node.js 模式）
   var xhr = new XMLHttpRequest();
   xhr.open('GET', '/api/load', true);
   xhr.onload = function() {
@@ -166,12 +171,27 @@ function loadData(callback) {
         if (data.statsRows) {
           statsRows = data.statsRows;
         }
+        if (callback) callback();
+        return;
       } catch(e) {}
     }
-    if (callback) callback();
+    // 服务器不可用，从 localStorage 恢复（GitHub Pages 模式）
+    loadLocalData(callback);
   };
-  xhr.onerror = function() { if (callback) callback(); };
+  xhr.onerror = function() { loadLocalData(callback); };
   xhr.send();
+}
+
+function loadLocalData(callback) {
+  try {
+    var raw = localStorage.getItem('ribao_data');
+    if (raw) {
+      var data = JSON.parse(raw);
+      if (data.users && data.users.length > 0) users = data.users;
+      if (data.statsRows) statsRows = data.statsRows;
+    }
+  } catch(e) {}
+  if (callback) callback();
 }
 
 // ============ 页面切换 ============
@@ -378,7 +398,6 @@ function addStatsRow() {
   var rowUserName = loggedInUser;
   
   var stdHours = item.hours;
-  var actual = Math.round(stdHours * qty * 100) / 100;
   var today = formatDate(new Date());
   
   statsRows.push({
@@ -390,8 +409,8 @@ function addStatsRow() {
     output: item.output || '',
     hours: stdHours,
     qty: qty,
-    actualHours: actual,
-    mergedHours: actual
+    actualHours: 0,
+    mergedHours: Math.round(stdHours * qty * 100) / 100
   });
   
   document.getElementById('itemQty').value = '';
@@ -458,17 +477,17 @@ function updateQty(index, val) {
   if (isNaN(qty) || qty <= 0) return;
   var row = statsRows[index];
   row.qty = qty;
-  var autoVal = Math.round(row.hours * qty * 100) / 100;
-  row.actualHours = autoVal;
-  row.mergedHours = autoVal;
+  row.mergedHours = Math.round((row.hours * qty + row.actualHours) * 100) / 100;
   renderStats();
 }
 
 function updateActualHours(index, val) {
   var v = parseFloat(val);
   if (isNaN(v) || v < 0) return;
-  statsRows[index].actualHours = Math.round(v * 100) / 100;
-  updateTotals();
+  var row = statsRows[index];
+  row.actualHours = Math.round(v * 100) / 100;
+  row.mergedHours = Math.round((row.hours * row.qty + row.actualHours) * 100) / 100;
+  renderStats();
 }
 
 function updateMergedHours(index, val) {
@@ -490,8 +509,8 @@ function clearStats() {
   renderStats();
 }
 
-// 初始化
-renderStats();
+// 初始化 - 页面加载时恢复数据
+loadData(function() { renderStats(); });
 
 // ============ 导出Excel ============
 function exportToXlsx() {
