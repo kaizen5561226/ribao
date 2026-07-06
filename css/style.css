@@ -628,6 +628,13 @@ body {
   outline: none;
   background: #fafafa;
   transition: border-color 0.2s;
+  -moz-appearance: textfield;
+}
+
+.inline-qty::-webkit-outer-spin-button,
+.inline-qty::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .inline-qty:focus {
