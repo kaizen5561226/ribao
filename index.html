@@ -43,7 +43,10 @@
         <button class="nav-tab active" onclick="switchTab('daily')">日报登记</button>
         <button class="nav-tab" onclick="switchTab('bug')">BUG记录</button>
       </div>
-      <button class="btn-logout" onclick="logout()">退出</button>
+      <div class="header-actions">
+        <button class="btn-save" onclick="saveData();showMsg('homeMessage','数据已保存','success')">保存</button>
+        <button class="btn-logout" onclick="logout()">退出</button>
+      </div>
     </div>
     <!-- 日报登记内容 -->
     <div id="dailyContent">
@@ -82,7 +85,6 @@
         <button class="btn-export" onclick="exportToXlsx()">导出Excel</button>
         <button class="btn-import" onclick="document.getElementById('importFile').click()">导入Excel</button>
         <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="importFromXlsx(this)">
-        <button class="btn-save" onclick="saveData();showMsg('homeMessage','数据已保存','success')">保存</button>
         <button class="btn-clear" onclick="clearStats()">清空</button>
       </div>
     </div>

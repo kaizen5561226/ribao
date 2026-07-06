@@ -287,7 +287,7 @@ body {
 
 .btn-save {
   padding: 8px 20px;
-  background: #27ae60;
+  background: #3498db;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -297,7 +297,12 @@ body {
 }
 
 .btn-save:hover {
-  background: #219a52;
+  background: #2980b9;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .empty-tip {
