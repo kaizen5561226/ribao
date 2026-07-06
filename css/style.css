@@ -500,6 +500,38 @@ body {
   display: none;
 }
 
+.frequent-keywords {
+  display: none;
+  margin-top: 8px;
+  padding: 6px 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.freq-label {
+  font-size: 12px;
+  color: #888;
+  margin-right: 4px;
+}
+
+.freq-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #f0f3ff;
+  color: #667eea;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.freq-tag:hover {
+  background: #667eea;
+  color: #fff;
+}
+
 .dropdown-item {
   padding: 10px 14px;
   cursor: pointer;

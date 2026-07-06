@@ -55,6 +55,7 @@
       <div class="search-wrapper">
         <input type="text" id="itemSearch" placeholder="搜索工作内容（如：工单、培训...）" autocomplete="off">
         <div class="search-dropdown" id="searchDropdown"></div>
+        <div class="frequent-keywords" id="frequentKeywords"></div>
       </div>
       <input type="number" id="itemQty" placeholder="数量/次数" step="0.01" min="0" class="qty-input">
       <button class="btn-add-item" onclick="addStatsRow()">添加</button>
@@ -491,6 +492,52 @@ function updateTotals() {
   var mergedSum = statsRows.reduce(function(s, r) { return s + r.mergedHours; }, 0);
   document.getElementById('totalHours').textContent = mergedSum.toFixed(2);
   document.getElementById('totalItems').textContent = statsRows.length;
+  renderFrequentKeywords();
+}
+
+function renderFrequentKeywords() {
+  var container = document.getElementById('frequentKeywords');
+  if (!loggedInUser || statsRows.length === 0) {
+    container.innerHTML = '';
+    container.style.display = 'none';
+    return;
+  }
+  
+  // 统计当前用户常用的工作项
+  var countMap = {};
+  statsRows.forEach(function(row) {
+    if (row.userName === loggedInUser) {
+      var key = row.name;
+      if (!countMap[key]) {
+        countMap[key] = { name: key, count: 0, hours: row.hours };
+      }
+      countMap[key].count++;
+    }
+  });
+  
+  // 转换为数组并按使用次数排序
+  var items = Object.values(countMap).sort(function(a, b) { return b.count - a.count; });
+  
+  // 取前5个
+  items = items.slice(0, 5);
+  
+  if (items.length === 0) {
+    container.innerHTML = '';
+    container.style.display = 'none';
+    return;
+  }
+  
+  container.style.display = 'block';
+  container.innerHTML = '<span class="freq-label">常用：</span>' + items.map(function(item) {
+    var safeName = item.name.replace(/'/g, "\\'");
+    return '<span class="freq-tag" onclick="quickFillSearch(\'' + safeName + '\')">' + escapeHtml(item.name) + '（' + item.count + '次）</span>';
+  }).join('');
+}
+
+function quickFillSearch(name) {
+  searchInput.value = name;
+  searchInput.dispatchEvent(new Event('input'));
+  searchInput.focus();
 }
 
 function parseDate(str) {
