@@ -154,6 +154,16 @@ function formatDateFromInput(dateStr) {
   return parseInt(parts[0]) + '年' + parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
 }
 
+function parseDateToInput(dateStr) {
+  // 将 "2026年6月30日" 转换为 "YYYY-MM-DD" 格式
+  var m = dateStr.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/);
+  if (!m) return '';
+  var yyyy = m[1];
+  var mm = String(parseInt(m[2])).padStart(2, '0');
+  var dd = String(parseInt(m[3])).padStart(2, '0');
+  return yyyy + '-' + mm + '-' + dd;
+}
+
 // ============ 数据持久化（服务器 API + localStorage 回退） ============
 function saveData() {
   var data = { users: users, statsRows: statsRows };
@@ -444,7 +454,7 @@ function renderStats() {
   tbody.innerHTML = statsRows.map(function(row, i) {
     return '<tr>' +
       '<td class="col-index">' + (i+1) + '</td>' +
-      '<td class="col-date"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'date\', this.value)">' + escapeHtml(row.date) + '</textarea></td>' +
+      '<td class="col-date"><input type="date" class="inline-date" value="' + parseDateToInput(row.date) + '" onchange="updateRowField(' + i + ', \'date\', formatDateFromInput(this.value))"></td>' +
       '<td class="col-user"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'userName\', this.value)">' + escapeHtml(row.userName) + '</textarea></td>' +
       '<td class="col-cat2">' + escapeHtml(row.cat2) + '</td>' +
       '<td class="col-cat3">' + escapeHtml(row.cat3) + '</td>' +

@@ -648,6 +648,21 @@ body {
   border-color: #667eea;
 }
 
+.inline-date {
+  padding: 4px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  background: #fafafa;
+  width: 130px;
+}
+
+.inline-date:focus {
+  border-color: #667eea;
+  background: #fff;
+}
+
 
 
 .stats-summary {
