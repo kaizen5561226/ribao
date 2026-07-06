@@ -77,6 +77,8 @@
       <span>共 <strong id="totalItems">0</strong> 项</span>
       <div class="summary-actions">
         <button class="btn-export" onclick="exportToXlsx()">导出Excel</button>
+        <button class="btn-import" onclick="document.getElementById('importFile').click()">导入Excel</button>
+        <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="importFromXlsx(this)">
         <button class="btn-save" onclick="saveData();showMsg('homeMessage','数据已保存','success')">保存</button>
         <button class="btn-clear" onclick="clearStats()">清空</button>
       </div>
@@ -570,6 +572,81 @@ function exportToXlsx() {
   var fileName = '工时统计_' + now.getFullYear() + (now.getMonth()+1) + now.getDate() + '.xlsx';
   XLSX.writeFile(wb, fileName);
   showMsg('homeMessage', '导出成功: ' + fileName, 'success');
+}
+
+// ============ 导入Excel ============
+function importFromXlsx(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (typeof XLSX === 'undefined') { showMsg('homeMessage', '导入库加载中，请刷新页面后重试', 'error'); return; }
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var wb = XLSX.read(data, { type: 'array' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      
+      if (rows.length < 2) {
+        showMsg('homeMessage', '文件中没有数据', 'error');
+        input.value = '';
+        return;
+      }
+      
+      // 跳过表头（第0行），从第1行开始解析
+      var imported = [];
+      for (var i = 1; i < rows.length; i++) {
+        var r = rows[i];
+        if (!r || r.length < 2) continue;
+        
+        var date = String(r[1] || '').trim();
+        var userName = String(r[2] || '').trim();
+        var cat2 = String(r[3] || '').trim();
+        var cat3 = String(r[4] || '').trim();
+        var name = String(r[5] || '').trim();
+        var output = String(r[6] || '').trim();
+        var hours = parseFloat(r[7]) || 0;
+        var qty = parseFloat(r[8]) || 0;
+        var actualHours = parseFloat(r[9]) || 0;
+        var mergedHours = parseFloat(r[10]) || 0;
+        
+        if (!name && !date) continue; // 跳过空行
+        
+        imported.push({
+          date: date,
+          userName: userName,
+          cat2: cat2,
+          cat3: cat3,
+          name: name,
+          output: output,
+          hours: hours,
+          qty: qty,
+          actualHours: actualHours,
+          mergedHours: mergedHours
+        });
+      }
+      
+      if (imported.length === 0) {
+        showMsg('homeMessage', '未解析到有效数据', 'error');
+        input.value = '';
+        return;
+      }
+      
+      // 追加到现有数据
+      statsRows = statsRows.concat(imported);
+      renderStats();
+      showMsg('homeMessage', '导入成功，共 ' + imported.length + ' 条记录', 'success');
+    } catch (err) {
+      showMsg('homeMessage', '导入失败: ' + err.message, 'error');
+    }
+    input.value = '';
+  };
+  reader.onerror = function() {
+    showMsg('homeMessage', '文件读取失败', 'error');
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
 }
 </script>
 </body>
