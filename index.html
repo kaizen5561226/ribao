@@ -39,11 +39,17 @@
         <div class="avatar-sm">👤</div>
         <span id="displayUser">--</span>
       </div>
-      <div class="stats-date-info">
-        <span id="currentDate"></span>
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('daily')">日报登记</button>
+        <button class="nav-tab" onclick="switchTab('bug')">BUG记录</button>
       </div>
       <button class="btn-logout" onclick="logout()">退出</button>
     </div>
+    <div class="stats-date-info" style="margin-bottom: 12px;">
+      <span id="currentDate"></span>
+    </div>
+    <!-- 日报登记内容 -->
+    <div id="dailyContent">
     <div class="stats-add-row">
       <input type="date" id="itemDate" class="date-input">
       <div class="search-wrapper">
@@ -85,6 +91,11 @@
       </div>
     </div>
     <div class="message" id="homeMessage"></div>
+    </div>
+    <!-- BUG记录内容 -->
+    <div id="bugContent" style="display: none;">
+      <div class="empty-tip">BUG记录功能开发中，敬请期待...</div>
+    </div>
   </div>
 </div>
 
@@ -235,6 +246,20 @@ function showAdmin() {
   }
 }
 function showHome() { showPage('pageHome'); }
+
+function switchTab(tab) {
+  var tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  event.target.classList.add('active');
+  
+  if (tab === 'daily') {
+    document.getElementById('dailyContent').style.display = 'block';
+    document.getElementById('bugContent').style.display = 'none';
+  } else if (tab === 'bug') {
+    document.getElementById('dailyContent').style.display = 'none';
+    document.getElementById('bugContent').style.display = 'block';
+  }
+}
 
 function doAdminLogin() {
   var name = document.getElementById('adminLoginName').value.trim();
