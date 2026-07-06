@@ -530,7 +530,7 @@ function renderFrequentKeywords() {
   container.style.display = 'block';
   container.innerHTML = '<span class="freq-label">常用：</span>' + items.map(function(item) {
     var safeName = item.name.replace(/'/g, "\\'");
-    return '<span class="freq-tag" onclick="quickFillSearch(\'' + safeName + '\')">' + escapeHtml(item.name) + '（' + item.count + '次）</span>';
+    return '<span class="freq-tag" onclick="quickFillSearch(\'' + safeName + '\')">' + escapeHtml(item.name) + '</span>';
   }).join('');
 }
 
