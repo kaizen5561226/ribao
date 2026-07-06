@@ -362,6 +362,14 @@ body {
   overflow: hidden;
 }
 
+#dailyContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .stats-header {
   display: flex;
   justify-content: space-between;
