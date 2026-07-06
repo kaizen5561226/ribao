@@ -693,16 +693,16 @@ function exportToXlsx() {
     }
     
     // 姓名列合并（同一日期下相同姓名连续的行）
-    var nameStart = groupStartRow;
+    var nameStartIdx = groupStartRow;  // Excel中的起始行索引
     var currentName = group.rows[0].userName;
     for (var i = 1; i <= group.rows.length; i++) {
       if (i === group.rows.length || group.rows[i].userName !== currentName) {
         // 如果有多行相同姓名，添加合并
-        if (i - nameStart > 1) {
-          merges.push({ s: { r: nameStart + 1, c: 2 }, e: { r: i, c: 2 } });
+        if (i - (nameStartIdx - groupStartRow) > 1) {
+          merges.push({ s: { r: nameStartIdx + 1, c: 2 }, e: { r: groupStartRow + i, c: 2 } });
         }
         if (i < group.rows.length) {
-          nameStart = i;
+          nameStartIdx = groupStartRow + i;
           currentName = group.rows[i].userName;
         }
       }
