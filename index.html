@@ -261,7 +261,8 @@ function doLogin() {
   loggedInUser = name;
   document.getElementById('displayUser').textContent = loggedInUser;
   document.getElementById('currentDate').textContent = formatDate(new Date());
-  loadData(function() { renderStats(); showHome(); });
+  renderStats();
+  showHome();
 }
 
 function logout() {
@@ -516,8 +517,32 @@ function clearStats() {
   renderStats();
 }
 
-// 初始化 - 页面加载时恢复数据
+// 初始化 - 页面加载时只加载一次数据
 loadData(function() { renderStats(); });
+
+// ============ 自动保存机制 ============
+// 3分钟自动保存
+setInterval(function() {
+  var data = { users: users, statsRows: statsRows };
+  var json = JSON.stringify(data);
+  try { localStorage.setItem('ribao_data', json); } catch(e) {}
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/save', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(json);
+}, 3 * 60 * 1000);
+
+// 关闭页面时自动保存
+window.addEventListener('beforeunload', function() {
+  var data = { users: users, statsRows: statsRows };
+  var json = JSON.stringify(data);
+  try { localStorage.setItem('ribao_data', json); } catch(e) {}
+  // 同步发送到服务器
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/save', false);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.send(json);
+});
 
 // ============ 导出Excel ============
 function exportToXlsx() {
