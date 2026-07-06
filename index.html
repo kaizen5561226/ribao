@@ -646,11 +646,59 @@ function exportToXlsx() {
   
   var headers = ['#', '日期', '姓名', '服务大类', '服务子类', '工作内容', '交付产出', '量纲标准工时h', '数量/次数', '实际工时', '合并实际工时'];
   
-  var data = statsRows.map(function(row, i) {
-    return [i+1, row.date, row.userName, row.cat2, row.cat3, row.name, row.output, row.hours, row.qty, row.actualHours, row.mergedHours];
+  // 按日期分组
+  var groups = [];
+  var currentGroup = null;
+  statsRows.forEach(function(row) {
+    if (!currentGroup || currentGroup.date !== row.date) {
+      currentGroup = { date: row.date, rows: [], startIndex: 0 };
+      groups.push(currentGroup);
+    }
+    currentGroup.rows.push(row);
+  });
+  
+  // 构建导出数据
+  var data = [];
+  var merges = [];
+  var rowIndex = 0;
+  
+  groups.forEach(function(group) {
+    var groupStartRow = rowIndex;
+    var actualSum = 0;
+    
+    group.rows.forEach(function(row, idx) {
+      actualSum += row.actualHours;
+      data.push([
+        rowIndex + 1,
+        idx === 0 ? row.date : '',  // 只有第一行显示日期
+        row.userName,
+        row.cat2,
+        row.cat3,
+        row.name,
+        row.output,
+        row.hours,
+        row.qty,
+        row.actualHours,
+        idx === 0 ? '' : ''  // 合并工时只在第一行显示
+      ]);
+      rowIndex++;
+    });
+    
+    // 合并实际工时小计显示在第一行
+    data[groupStartRow][10] = actualSum;
+    
+    // 日期列合并（如果多行）
+    if (group.rows.length > 1) {
+      merges.push({ s: { r: groupStartRow + 1, c: 1 }, e: { r: groupStartRow + group.rows.length, c: 1 } });
+    }
   });
   
   var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
+  
+  // 设置合并
+  if (merges.length > 0) {
+    ws['!merges'] = merges;
+  }
   
   // 设置列宽
   ws['!cols'] = [
