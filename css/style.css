@@ -591,7 +591,9 @@ body {
 .col-qty { width: 80px; }
 .col-actual { width: 80px; }
 .col-merged { width: 90px; }
-.col-action { width: 50px; text-align: center; }
+.col-action { width: 50px; text-align: center; position: sticky; right: 0; z-index: 5; }
+.stats-table th.col-action { background: #f8f9fa; }
+.stats-table td.col-action { background: #fff; box-shadow: -2px 0 4px rgba(0,0,0,0.06); }
 
 .inline-text {
   width: 100%;
