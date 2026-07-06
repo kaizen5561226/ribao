@@ -456,6 +456,8 @@ function addStatsRow() {
   document.getElementById('itemQty').value = '';
   searchInput.value = '';
   selectedItem = null;
+  // 按日期递增排序
+  statsRows.sort(function(a, b) { return parseDate(a.date) - parseDate(b.date); });
   renderStats();
 }
 
