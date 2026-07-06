@@ -45,6 +45,7 @@
       <button class="btn-logout" onclick="logout()">退出</button>
     </div>
     <div class="stats-add-row">
+      <input type="date" id="itemDate" class="date-input">
       <div class="search-wrapper">
         <input type="text" id="itemSearch" placeholder="搜索工作内容（如：工单、培训...）" autocomplete="off">
         <div class="search-dropdown" id="searchDropdown"></div>
@@ -144,6 +145,13 @@ function escapeHtml(str) {
 
 function formatDate(d) {
   return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+
+function formatDateFromInput(dateStr) {
+  // 将 "YYYY-MM-DD" 转换为 "2026年6月30日" 格式
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return parseInt(parts[0]) + '年' + parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
 }
 
 // ============ 数据持久化（服务器 API + localStorage 回退） ============
@@ -401,10 +409,11 @@ function addStatsRow() {
   var rowUserName = loggedInUser;
   
   var stdHours = item.hours;
-  var today = formatDate(new Date());
+  var dateInput = document.getElementById('itemDate');
+  var rowDate = dateInput.value ? formatDateFromInput(dateInput.value) : formatDate(new Date());
   
   statsRows.push({
-    date: today,
+    date: rowDate,
     userName: rowUserName,
     cat2: item.cat2,
     cat3: item.cat3,
@@ -521,6 +530,15 @@ function clearStats() {
 
 // 初始化 - 页面加载时只加载一次数据
 loadData(function() { renderStats(); });
+
+// 设置日期选择框默认值为今天
+(function() {
+  var today = new Date();
+  var yyyy = today.getFullYear();
+  var mm = String(today.getMonth() + 1).padStart(2, '0');
+  var dd = String(today.getDate()).padStart(2, '0');
+  document.getElementById('itemDate').value = yyyy + '-' + mm + '-' + dd;
+})();
 
 // ============ 自动保存机制 ============
 // 3分钟自动保存
