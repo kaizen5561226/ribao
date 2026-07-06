@@ -45,9 +45,6 @@
       </div>
       <button class="btn-logout" onclick="logout()">退出</button>
     </div>
-    <div class="stats-date-info" style="margin-bottom: 12px;">
-      <span id="currentDate"></span>
-    </div>
     <!-- 日报登记内容 -->
     <div id="dailyContent">
     <div class="stats-add-row">
@@ -55,7 +52,6 @@
       <div class="search-wrapper">
         <input type="text" id="itemSearch" placeholder="搜索工作内容（如：工单、培训...）" autocomplete="off">
         <div class="search-dropdown" id="searchDropdown"></div>
-        <div class="search-hint" id="searchHint"></div>
       </div>
       <input type="number" id="itemQty" placeholder="数量/次数" step="0.01" min="0" class="qty-input">
       <button class="btn-add-item" onclick="addStatsRow()">添加</button>
@@ -305,7 +301,6 @@ function doLogin() {
   }
   loggedInUser = name;
   document.getElementById('displayUser').textContent = loggedInUser;
-  document.getElementById('currentDate').textContent = formatDate(new Date());
   renderStats();
   showHome();
 }
@@ -365,14 +360,12 @@ function updateUserName(index, name) {
 
 // ============ 工时统计 ============
 var searchInput = document.getElementById('itemSearch');
-var searchHint = document.getElementById('searchHint');
 var searchDropdown = document.getElementById('searchDropdown');
 
 // 搜索输入
 searchInput.addEventListener('input', function() {
   var keyword = this.value.trim().toLowerCase();
   if (!keyword || !window.workItems) {
-    searchHint.textContent = '';
     searchDropdown.innerHTML = '';
     searchDropdown.style.display = 'none';
     selectedItem = null;
@@ -383,12 +376,10 @@ searchInput.addEventListener('input', function() {
            item.cat3.toLowerCase().indexOf(keyword) !== -1;
   }).slice(0, 8);
   if (results.length === 0) {
-    searchHint.textContent = '无匹配结果';
     searchDropdown.innerHTML = '';
     searchDropdown.style.display = 'none';
     selectedItem = null;
   } else {
-    searchHint.innerHTML = '找到 ' + results.length + ' 项：<strong>' + escapeHtml(results[0].name) + '</strong>（' + results[0].hours + 'h）';
     searchDropdown.innerHTML = results.map(function(item) {
       var safeName = item.name.replace(/'/g, "\\'");
       return '<div class="dropdown-item" onclick="selectItem(\'' + safeName + '\')">' +
@@ -420,7 +411,6 @@ function selectItem(name) {
     var found = window.workItems.filter(function(item) { return item.name === name; });
     if (found.length > 0) selectedItem = found[0];
   }
-  searchHint.textContent = '已选择: ' + name;
   document.getElementById('itemQty').focus();
 }
 
@@ -462,7 +452,6 @@ function addStatsRow() {
   
   document.getElementById('itemQty').value = '';
   searchInput.value = '';
-  searchHint.textContent = '';
   selectedItem = null;
   renderStats();
 }
