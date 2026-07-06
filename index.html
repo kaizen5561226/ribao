@@ -689,7 +689,10 @@ function exportToXlsx() {
     
     // 日期列合并（如果多行）
     if (group.rows.length > 1) {
-      merges.push({ s: { r: groupStartRow + 1, c: 1 }, e: { r: groupStartRow + group.rows.length, c: 1 } });
+      var startRow = groupStartRow + 1;  // Excel中的起始行（+1是因为表头占第0行）
+      var endRow = groupStartRow + group.rows.length;  // Excel中的结束行
+      merges.push({ s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } });
+      console.log('日期合并:', startRow, '-', endRow, '列:', 1);
     }
     
     // 姓名列合并（同一日期下相同姓名连续的行）
@@ -699,7 +702,10 @@ function exportToXlsx() {
       if (i === group.rows.length || group.rows[i].userName !== currentName) {
         // 如果有多行相同姓名，添加合并
         if (i - (nameStartIdx - groupStartRow) > 1) {
-          merges.push({ s: { r: nameStartIdx + 1, c: 2 }, e: { r: groupStartRow + i, c: 2 } });
+          var nameStartRow = nameStartIdx + 1;  // Excel中的起始行
+          var nameEndRow = groupStartRow + i;   // Excel中的结束行
+          merges.push({ s: { r: nameStartRow, c: 2 }, e: { r: nameEndRow, c: 2 } });
+          console.log('姓名合并:', nameStartRow, '-', nameEndRow, '列:', 2);
         }
         if (i < group.rows.length) {
           nameStartIdx = groupStartRow + i;
