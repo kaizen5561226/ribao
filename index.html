@@ -670,7 +670,7 @@ function exportToXlsx() {
       actualSum += row.actualHours;
       data.push([
         rowIndex + 1,
-        idx === 0 ? row.date : '',  // 只有第一行显示日期
+        row.date,
         row.userName,
         row.cat2,
         row.cat3,
@@ -679,7 +679,7 @@ function exportToXlsx() {
         row.hours,
         row.qty,
         row.actualHours,
-        idx === 0 ? '' : ''  // 合并工时只在第一行显示
+        ''  // 合并工时先清空，后面统一设置
       ]);
       rowIndex++;
     });
@@ -690,6 +690,22 @@ function exportToXlsx() {
     // 日期列合并（如果多行）
     if (group.rows.length > 1) {
       merges.push({ s: { r: groupStartRow + 1, c: 1 }, e: { r: groupStartRow + group.rows.length, c: 1 } });
+    }
+    
+    // 姓名列合并（同一日期下相同姓名连续的行）
+    var nameStart = groupStartRow;
+    var currentName = group.rows[0].userName;
+    for (var i = 1; i <= group.rows.length; i++) {
+      if (i === group.rows.length || group.rows[i].userName !== currentName) {
+        // 如果有多行相同姓名，添加合并
+        if (i - nameStart > 1) {
+          merges.push({ s: { r: nameStart + 1, c: 2 }, e: { r: i, c: 2 } });
+        }
+        if (i < group.rows.length) {
+          nameStart = i;
+          currentName = group.rows[i].userName;
+        }
+      }
     }
   });
   
