@@ -135,6 +135,7 @@
     <div class="message" id="adminMessage"></div>
     <div style="margin:12px 0;">
       <button class="btn-save" onclick="saveData();showMsg('adminMessage','数据已保存','success')">保存数据</button>
+      <button class="btn-export-all" onclick="exportAllUsersSimple()">全量导出</button>
     </div>
     <a href="#" onclick="lockAdmin()" class="admin-link">← 锁定并返回登录页</a>
   </div>
@@ -824,6 +825,52 @@ function exportToXlsx() {
   var fileName = '工时统计_' + now.getFullYear() + (now.getMonth()+1) + now.getDate() + '.xlsx';
   XLSX.writeFile(wb, fileName);
   showMsg('homeMessage', '导出成功: ' + fileName, 'success');
+}
+
+// ============ 全量导出Excel（简单汇总所有用户数据） ============
+function exportAllUsersSimple() {
+  if (statsRows.length === 0) { showMsg('adminMessage', '没有数据可导出', 'error'); return; }
+  if (typeof XLSX === 'undefined') { showMsg('adminMessage', '导出库加载中，请刷新页面后重试', 'error'); return; }
+  
+  // 表头
+  var headers = ['日期', '姓名', '服务大类', '服务子类', '工作内容', '交付产出', '量纲标准工时h', '数量/次数', '实际工时'];
+  
+  // 按日期排序所有数据
+  var sortedRows = [...statsRows].sort(function(a, b) {
+    return parseDate(a.date) - parseDate(b.date);
+  });
+  
+  // 构建导出数据（简单扁平化，不合并）
+  var data = [];
+  sortedRows.forEach(function(row) {
+    data.push([
+      row.date,
+      row.userName,
+      row.cat2,
+      row.cat3,
+      row.name,
+      row.output,
+      row.hours,
+      row.qty,
+      row.actualHours
+    ]);
+  });
+  
+  var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
+  
+  // 设置列宽（9列）
+  ws['!cols'] = [
+    {wch:14},{wch:10},{wch:16},{wch:20},
+    {wch:30},{wch:30},{wch:12},{wch:10},{wch:10}
+  ];
+  
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '全量统计');
+  
+  var now = new Date();
+  var fileName = '全量统计_' + now.getFullYear() + (now.getMonth()+1) + now.getDate() + '.xlsx';
+  XLSX.writeFile(wb, fileName);
+  showMsg('adminMessage', '全量导出成功: ' + fileName, 'success');
 }
 
 // ============ 导入Excel ============
