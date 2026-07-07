@@ -344,6 +344,7 @@ function addUser() {
   users.push({name: name, password: '123456'});
   nameInput.value = '';
   showMsg('adminMessage', '添加成功', 'success');
+  saveData();
   loadUsers();
 }
 
@@ -352,14 +353,26 @@ function deleteUser(index) {
   if (!confirm('确定要删除账号 "' + users[index].name + '" 吗？')) return;
   users.splice(index, 1);
   showMsg('adminMessage', '删除成功', 'success');
+  saveData();
   loadUsers();
 }
 
 function updateUserName(index, name) {
   name = name.trim();
   if (!name) { loadUsers(); showMsg('adminMessage', '姓名不能为空', 'error'); return; }
+  var oldName = users[index].name;
   users[index].name = name;
+  // 同步更新 statsRows 中的用户名
+  if (oldName !== name) {
+    for (var i = 0; i < statsRows.length; i++) {
+      if (statsRows[i].userName === oldName) {
+        statsRows[i].userName = name;
+      }
+    }
+  }
   showMsg('adminMessage', '姓名已更新', 'success');
+  saveData();
+  loadUsers();
 }
 
 // ============ 工时统计 ============
