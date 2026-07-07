@@ -470,13 +470,14 @@ function renderStats() {
     return;
   }
   
-  // 按日期分组计算rowspan
+  // 按日期分组计算rowspan和合并工时
   var dateGroups = {};
   statsRows.forEach(function(row, idx) {
     if (!dateGroups[row.date]) {
-      dateGroups[row.date] = { startIdx: idx, count: 1 };
+      dateGroups[row.date] = { startIdx: idx, count: 1, actualSum: row.actualHours };
     } else {
       dateGroups[row.date].count++;
+      dateGroups[row.date].actualSum += row.actualHours;
     }
   });
   
@@ -496,7 +497,7 @@ function renderStats() {
       '<td class="col-hours">' + row.hours + '</td>' +
       '<td class="col-qty"><input type="number" class="inline-qty" value="' + row.qty + '" step="0.01" min="0" onchange="updateQty(' + i + ', this.value)"></td>' +
       '<td class="col-actual"><input type="number" class="inline-qty" value="' + row.actualHours + '" step="0.01" min="0" onchange="updateActualHours(' + i + ', this.value)"></td>' +
-      '<td class="col-merged"><input type="number" class="inline-qty" value="' + row.mergedHours + '" step="0.01" min="0" onchange="updateMergedHours(' + i + ', this.value)"></td>' +
+      (isFirstInDateGroup ? '<td class="col-merged" rowspan="' + rowspan + '"><input type="number" class="inline-qty" value="' + dateGroup.actualSum.toFixed(2) + '" step="0.01" min="0" readonly style="background:#f8f9fa;font-weight:600;color:#667eea;"></td>' : '') +
       '<td class="col-action"><button class="btn-delete" onclick="deleteRow(' + i + ')">删除</button></td>' +
       '</tr>';
   }).join('');
