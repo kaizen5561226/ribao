@@ -770,14 +770,15 @@ function exportToXlsx() {
     // 设置合并实际工时小计（第一行）
     data[groupStartRow][9] = actualSum;
     
-    // 设置人天和核对工时：单行时直接用公式引用L列，多行时用SUM公式
+    // 设置人天：始终用公式引用J列
     var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
     data[groupStartRow][10] = { f: personDaysFormula };  // 人天始终用公式
     
     if (group.rows.length === 1) {
-      // 单行：核对工时直接引用L列的值（避免SUM(Lx:Lx)的问题）
-      var checkHoursCell = 'L' + (groupStartRow + 2);
-      data[groupStartRow][12] = { f: checkHoursCell };  // 核对工时 = Lx
+      // 单行：核对工时直接用数值（避免引用公式单元格的问题）
+      var row = group.rows[0];
+      var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
+      data[groupStartRow][12] = standardHoursValue;  // 核对工时直接用数值
     } else {
       // 多行：用SUM公式
       var checkHoursStart = groupStartRow + 2;  // Excel起始行
@@ -891,14 +892,15 @@ function exportAllUsersSimple() {
     // 设置合并实际工时小计（第一行）
     data[groupStartRow][9] = actualSum;
     
-    // 设置人天和核对工时：单行时直接用公式引用L列，多行时用SUM公式
+    // 设置人天：始终用公式引用J列
     var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
     data[groupStartRow][10] = { f: personDaysFormula };  // 人天始终用公式
     
     if (group.rows.length === 1) {
-      // 单行：核对工时直接引用L列的值（避免SUM(Lx:Lx)的问题）
-      var checkHoursCell = 'L' + (groupStartRow + 2);
-      data[groupStartRow][12] = { f: checkHoursCell };  // 核对工时 = Lx
+      // 单行：核对工时直接用数值（避免引用公式单元格的问题）
+      var row = group.rows[0];
+      var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
+      data[groupStartRow][12] = standardHoursValue;  // 核对工时直接用数值
     } else {
       // 多行：用SUM公式
       var checkHoursStart = groupStartRow + 2;  // Excel起始行
