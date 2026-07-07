@@ -470,10 +470,24 @@ function renderStats() {
     return;
   }
   
+  // 按日期分组计算rowspan
+  var dateGroups = {};
+  statsRows.forEach(function(row, idx) {
+    if (!dateGroups[row.date]) {
+      dateGroups[row.date] = { startIdx: idx, count: 1 };
+    } else {
+      dateGroups[row.date].count++;
+    }
+  });
+  
   tbody.innerHTML = statsRows.map(function(row, i) {
+    var dateGroup = dateGroups[row.date];
+    var isFirstInDateGroup = (i === dateGroup.startIdx);
+    var rowspan = dateGroup.count;
+    
     return '<tr>' +
       '<td class="col-index">' + (i+1) + '</td>' +
-      '<td class="col-date"><input type="date" class="inline-date" value="' + parseDateToInput(row.date) + '" onchange="updateRowField(' + i + ', \'date\', formatDateFromInput(this.value))"></td>' +
+      (isFirstInDateGroup ? '<td class="col-date" rowspan="' + rowspan + '"><input type="date" class="inline-date" value="' + parseDateToInput(row.date) + '" onchange="updateRowField(' + i + ', \'date\', formatDateFromInput(this.value))"></td>' : '') +
       '<td class="col-user"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'userName\', this.value)">' + escapeHtml(row.userName) + '</textarea></td>' +
       '<td class="col-cat2">' + escapeHtml(row.cat2) + '</td>' +
       '<td class="col-cat3">' + escapeHtml(row.cat3) + '</td>' +
