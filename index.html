@@ -777,7 +777,10 @@ function exportToXlsx() {
     if (group.rows.length === 1) {
       // 单行：核对工时直接用数值（避免引用公式单元格的问题）
       var row = group.rows[0];
-      var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
+      // 使用与合并实际工时相同的计算逻辑
+      var standardHoursValue = (row.actualHours === 0 || row.actualHours === '' || isNaN(row.actualHours)) 
+        ? (isNaN(row.hours) || isNaN(row.qty) ? 0 : row.hours * row.qty)
+        : row.actualHours;
       data[groupStartRow][12] = standardHoursValue;  // 核对工时直接用数值
     } else {
       // 多行：用SUM公式
@@ -863,7 +866,11 @@ function exportAllUsersSimple() {
     var actualSum = 0;
     
     group.rows.forEach(function(row, idx) {
-      actualSum += row.actualHours;
+      // 计算该行的实际工时：如果actualHours为0或空，使用hours*qty；否则使用actualHours
+      var rowActualHours = (row.actualHours === 0 || row.actualHours === '' || isNaN(row.actualHours)) 
+        ? (isNaN(row.hours) || isNaN(row.qty) ? 0 : row.hours * row.qty)
+        : row.actualHours;
+      actualSum += rowActualHours;
       
       // Excel行号（+1是因为表头占第0行）
       var excelRow = rowIndex + 2;  // 第2行开始是数据
@@ -899,7 +906,10 @@ function exportAllUsersSimple() {
     if (group.rows.length === 1) {
       // 单行：核对工时直接用数值（避免引用公式单元格的问题）
       var row = group.rows[0];
-      var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
+      // 使用与合并实际工时相同的计算逻辑
+      var standardHoursValue = (row.actualHours === 0 || row.actualHours === '' || isNaN(row.actualHours)) 
+        ? (isNaN(row.hours) || isNaN(row.qty) ? 0 : row.hours * row.qty)
+        : row.actualHours;
       data[groupStartRow][12] = standardHoursValue;  // 核对工时直接用数值
     } else {
       // 多行：用SUM公式
