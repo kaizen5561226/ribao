@@ -793,7 +793,8 @@ function exportToXlsx() {
     for (var i = 1; i <= group.rows.length; i++) {
       if (i === group.rows.length || group.rows[i].userName !== currentName) {
         // 如果有多行相同姓名，添加合并
-        if (i - (nameStartIdx - groupStartRow) > 1) {
+        var sameNameCount = i - (nameStartIdx - groupStartRow);
+        if (sameNameCount > 1) {
           var nameStartRow = nameStartIdx + 1;  // Excel中的起始行
           var nameEndRow = groupStartRow + i;   // Excel中的结束行
           merges.push({ s: { r: nameStartRow, c: 1 }, e: { r: nameEndRow, c: 1 } });
@@ -936,7 +937,8 @@ function exportAllUsersToXlsx() {
     for (var i = 1; i <= group.rows.length; i++) {
       if (i === group.rows.length || group.rows[i].userName !== currentName) {
         // 如果有多行相同姓名，添加合并
-        if (i - (nameStartIdx - groupStartRow) > 1) {
+        var sameNameCount = i - (nameStartIdx - groupStartRow);
+        if (sameNameCount > 1) {
           var nameStartRow = nameStartIdx + 1;  // Excel中的起始行
           var nameEndRow = groupStartRow + i;   // Excel中的结束行
           merges.push({ s: { r: nameStartRow, c: 1 }, e: { r: nameEndRow, c: 1 } });
