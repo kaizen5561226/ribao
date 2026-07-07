@@ -717,8 +717,8 @@ function exportToXlsx() {
       // Excel行号（+1是因为表头占第0行）
       var excelRow = rowIndex + 2;  // 第2行开始是数据
       
-      // 计算标准工时：IF(G="按实际",I,G*I)
-      var standardHoursFormula = 'IF(G' + excelRow + '="按实际",I' + excelRow + ',G' + excelRow + '*I' + excelRow + ')';
+      // 计算标准工时：IF(G="按实际",I,G*H)
+      var standardHoursFormula = 'IF(G' + excelRow + '="按实际",I' + excelRow + ',G' + excelRow + '*H' + excelRow + ')';
       standardHoursSum += standardHoursFormula;  // 保存公式字符串用于后续SUM
       
       data.push([
