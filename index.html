@@ -481,15 +481,43 @@ function renderStats() {
     }
   });
   
+  // 计算姓名列的rowspan（同一日期下相同姓名连续的行）
+  var nameRowspans = {};
+  var currentNameStart = null;
+  var currentNameKey = null;
+  
+  for (var i = 0; i < statsRows.length; i++) {
+    var row = statsRows[i];
+    var key = row.date + '|' + row.userName;
+    
+    if (!currentNameKey || currentNameKey !== key) {
+      // 新的姓名组开始
+      if (currentNameKey && currentNameStart !== null) {
+        // 保存上一组的rowspan
+        nameRowspans[currentNameStart] = i - currentNameStart;
+      }
+      currentNameStart = i;
+      currentNameKey = key;
+    }
+  }
+  // 处理最后一组
+  if (currentNameStart !== null) {
+    nameRowspans[currentNameStart] = statsRows.length - currentNameStart;
+  }
+  
   tbody.innerHTML = statsRows.map(function(row, i) {
     var dateGroup = dateGroups[row.date];
     var isFirstInDateGroup = (i === dateGroup.startIdx);
     var rowspan = dateGroup.count;
     
+    // 检查是否是姓名组的起始行
+    var nameRowspan = nameRowspans[i];
+    var isFirstInNameGroup = (nameRowspan !== undefined);
+    
     return '<tr>' +
       '<td class="col-index">' + (i+1) + '</td>' +
       (isFirstInDateGroup ? '<td class="col-date" rowspan="' + rowspan + '"><input type="date" class="inline-date" value="' + parseDateToInput(row.date) + '" onchange="updateRowField(' + i + ', \'date\', formatDateFromInput(this.value))"></td>' : '') +
-      '<td class="col-user"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'userName\', this.value)">' + escapeHtml(row.userName) + '</textarea></td>' +
+      (isFirstInNameGroup ? '<td class="col-user" rowspan="' + nameRowspan + '"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'userName\', this.value)">' + escapeHtml(row.userName) + '</textarea></td>' : '') +
       '<td class="col-cat2">' + escapeHtml(row.cat2) + '</td>' +
       '<td class="col-cat3">' + escapeHtml(row.cat3) + '</td>' +
       '<td class="col-name"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'name\', this.value)">' + escapeHtml(row.name) + '</textarea></td>' +
