@@ -464,7 +464,13 @@ function addStatsRow() {
 
 function renderStats() {
   var tbody = document.getElementById('statsBody');
-  if (statsRows.length === 0) {
+  
+  // 过滤出当前登录用户的数据
+  var userRows = statsRows.filter(function(row) {
+    return row.userName === loggedInUser;
+  });
+  
+  if (userRows.length === 0) {
     tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#bbb;padding:30px;">暂无数据，请添加工时记录</td></tr>';
     document.getElementById('totalHours').textContent = '0.00';
     document.getElementById('totalItems').textContent = '0';
@@ -473,7 +479,7 @@ function renderStats() {
   
   // 按日期分组计算rowspan和合并工时
   var dateGroups = {};
-  statsRows.forEach(function(row, idx) {
+  userRows.forEach(function(row, idx) {
     if (!dateGroups[row.date]) {
       dateGroups[row.date] = { startIdx: idx, count: 1, actualSum: row.actualHours };
     } else {
@@ -487,8 +493,8 @@ function renderStats() {
   var currentNameStart = null;
   var currentNameKey = null;
   
-  for (var i = 0; i < statsRows.length; i++) {
-    var row = statsRows[i];
+  for (var i = 0; i < userRows.length; i++) {
+    var row = userRows[i];
     var key = row.date + '|' + row.userName;
     
     if (!currentNameKey || currentNameKey !== key) {
@@ -503,10 +509,10 @@ function renderStats() {
   }
   // 处理最后一组
   if (currentNameStart !== null) {
-    nameRowspans[currentNameStart] = statsRows.length - currentNameStart;
+    nameRowspans[currentNameStart] = userRows.length - currentNameStart;
   }
   
-  tbody.innerHTML = statsRows.map(function(row, i) {
+  tbody.innerHTML = userRows.map(function(row, i) {
     var dateGroup = dateGroups[row.date];
     var isFirstInDateGroup = (i === dateGroup.startIdx);
     var rowspan = dateGroup.count;
@@ -515,19 +521,22 @@ function renderStats() {
     var nameRowspan = nameRowspans[i];
     var isFirstInNameGroup = (nameRowspan !== undefined);
     
+    // 找到原始索引用于更新操作
+    var originalIndex = statsRows.indexOf(row);
+    
     return '<tr>' +
       '<td class="col-index">' + (i+1) + '</td>' +
-      (isFirstInDateGroup ? '<td class="col-date" rowspan="' + rowspan + '"><input type="date" class="inline-date" value="' + parseDateToInput(row.date) + '" onchange="updateRowField(' + i + ', \'date\', formatDateFromInput(this.value))"></td>' : '') +
-      (isFirstInNameGroup ? '<td class="col-user" rowspan="' + nameRowspan + '"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'userName\', this.value)">' + escapeHtml(row.userName) + '</textarea></td>' : '') +
+      (isFirstInDateGroup ? '<td class="col-date" rowspan="' + rowspan + '"><input type="date" class="inline-date" value="' + parseDateToInput(row.date) + '" onchange="updateRowField(' + originalIndex + ', \'date\', formatDateFromInput(this.value))"></td>' : '') +
+      (isFirstInNameGroup ? '<td class="col-user" rowspan="' + nameRowspan + '"><textarea class="inline-text" rows="1" onchange="updateRowField(' + originalIndex + ', \'userName\', this.value)">' + escapeHtml(row.userName) + '</textarea></td>' : '') +
       '<td class="col-cat2">' + escapeHtml(row.cat2) + '</td>' +
       '<td class="col-cat3">' + escapeHtml(row.cat3) + '</td>' +
-      '<td class="col-name"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'name\', this.value)">' + escapeHtml(row.name) + '</textarea></td>' +
-      '<td class="col-output"><textarea class="inline-text" rows="1" onchange="updateRowField(' + i + ', \'output\', this.value)">' + escapeHtml(row.output) + '</textarea></td>' +
+      '<td class="col-name"><textarea class="inline-text" rows="1" onchange="updateRowField(' + originalIndex + ', \'name\', this.value)">' + escapeHtml(row.name) + '</textarea></td>' +
+      '<td class="col-output"><textarea class="inline-text" rows="1" onchange="updateRowField(' + originalIndex + ', \'output\', this.value)">' + escapeHtml(row.output) + '</textarea></td>' +
       '<td class="col-hours">' + row.hours + '</td>' +
-      '<td class="col-qty"><input type="number" class="inline-qty" value="' + row.qty + '" step="0.01" min="0" onchange="updateQty(' + i + ', this.value)"></td>' +
-      '<td class="col-actual"><input type="number" class="inline-qty" value="' + row.actualHours + '" step="0.01" min="0" onchange="updateActualHours(' + i + ', this.value)"></td>' +
+      '<td class="col-qty"><input type="number" class="inline-qty" value="' + row.qty + '" step="0.01" min="0" onchange="updateQty(' + originalIndex + ', this.value)"></td>' +
+      '<td class="col-actual"><input type="number" class="inline-qty" value="' + row.actualHours + '" step="0.01" min="0" onchange="updateActualHours(' + originalIndex + ', this.value)"></td>' +
       (isFirstInDateGroup ? '<td class="col-merged" rowspan="' + rowspan + '"><input type="number" class="inline-qty" value="' + dateGroup.actualSum.toFixed(2) + '" step="0.01" min="0" readonly style="background:#f8f9fa;font-weight:600;color:#667eea;"></td>' : '') +
-      '<td class="col-action"><button class="btn-delete" onclick="deleteRow(' + i + ')">删除</button></td>' +
+      '<td class="col-action"><button class="btn-delete" onclick="deleteRow(' + originalIndex + ')">删除</button></td>' +
       '</tr>';
   }).join('');
   
@@ -535,9 +544,14 @@ function renderStats() {
 }
 
 function updateTotals() {
-  var mergedSum = statsRows.reduce(function(s, r) { return s + r.mergedHours; }, 0);
+  // 只统计当前用户的数据
+  var userRows = statsRows.filter(function(row) {
+    return row.userName === loggedInUser;
+  });
+  
+  var mergedSum = userRows.reduce(function(s, r) { return s + r.mergedHours; }, 0);
   document.getElementById('totalHours').textContent = mergedSum.toFixed(2);
-  document.getElementById('totalItems').textContent = statsRows.length;
+  document.getElementById('totalItems').textContent = userRows.length;
   renderFrequentKeywords();
 }
 
