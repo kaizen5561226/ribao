@@ -770,22 +770,22 @@ function exportToXlsx() {
     // 设置合并实际工时小计（第一行）
     data[groupStartRow][9] = actualSum;
     
-    // 设置人天公式（合并，公式 =Jx/8，J是合并实际工时列）
-    var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
-    data[groupStartRow][10] = { f: personDaysFormula };
-    
-    // 计算核对工时：如果是单行，直接用标准工时值；如果是多行，用SUM公式
+    // 计算核对工时和设置人天：如果是单行，直接用数值；如果是多行，用公式
     if (group.rows.length === 1) {
-      // 单行：直接计算标准工时值
+      // 单行：直接计算标准工时值和对应的人天
       var row = group.rows[0];
       var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
-      data[groupStartRow][12] = standardHoursValue;
+      data[groupStartRow][10] = standardHoursValue / 8;  // 人天直接用数值
+      data[groupStartRow][12] = standardHoursValue;       // 核对工时直接用数值
     } else {
-      // 多行：用SUM公式
+      // 多行：用公式
+      var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
+      data[groupStartRow][10] = { f: personDaysFormula };  // 人天用公式
+      
       var checkHoursStart = groupStartRow + 2;  // Excel起始行
       var checkHoursEnd = groupStartRow + group.rows.length + 1;  // Excel结束行
       var checkHoursFormula = 'SUM(L' + checkHoursStart + ':L' + checkHoursEnd + ')';
-      data[groupStartRow][12] = { f: checkHoursFormula };
+      data[groupStartRow][12] = { f: checkHoursFormula };  // 核对工时用公式
     }
     
     // 姓名列合并（如果同一日期+姓名有多行）
@@ -902,22 +902,22 @@ function exportAllUsersToXlsx() {
     // 设置合并实际工时小计（第一行）
     data[groupStartRow][9] = actualSum;
     
-    // 设置人天公式（合并，公式 =Jx/8，J是合并实际工时列）
-    var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
-    data[groupStartRow][10] = { f: personDaysFormula };
-    
-    // 计算核对工时：如果是单行，直接用标准工时值；如果是多行，用SUM公式
+    // 计算核对工时和设置人天：如果是单行，直接用数值；如果是多行，用公式
     if (group.rows.length === 1) {
-      // 单行：直接计算标准工时值
+      // 单行：直接计算标准工时值和对应的人天
       var row = group.rows[0];
       var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
-      data[groupStartRow][12] = standardHoursValue;
+      data[groupStartRow][10] = standardHoursValue / 8;  // 人天直接用数值
+      data[groupStartRow][12] = standardHoursValue;       // 核对工时直接用数值
     } else {
-      // 多行：用SUM公式
+      // 多行：用公式
+      var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
+      data[groupStartRow][10] = { f: personDaysFormula };  // 人天用公式
+      
       var checkHoursStart = groupStartRow + 2;  // Excel起始行
       var checkHoursEnd = groupStartRow + group.rows.length + 1;  // Excel结束行
       var checkHoursFormula = 'SUM(L' + checkHoursStart + ':L' + checkHoursEnd + ')';
-      data[groupStartRow][12] = { f: checkHoursFormula };
+      data[groupStartRow][12] = { f: checkHoursFormula };  // 核对工时用公式
     }
     
     // 姓名列合并（如果同一日期+姓名有多行）
