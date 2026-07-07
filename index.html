@@ -774,58 +774,36 @@ function exportToXlsx() {
     var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
     data[groupStartRow][10] = { f: personDaysFormula };
     
-    // 设置核对工时公式（合并，公式 =SUM(L开始:L结束)，L是标准工时列）
-    var checkHoursStart = groupStartRow + 2;  // Excel起始行
-    var checkHoursEnd = groupStartRow + group.rows.length + 1;  // Excel结束行
-    var checkHoursFormula = 'SUM(L' + checkHoursStart + ':L' + checkHoursEnd + ')';
-    data[groupStartRow][12] = { f: checkHoursFormula };
+    // 计算核对工时：如果是单行，直接用标准工时值；如果是多行，用SUM公式
+    if (group.rows.length === 1) {
+      // 单行：直接计算标准工时值
+      var row = group.rows[0];
+      var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
+      data[groupStartRow][12] = standardHoursValue;
+    } else {
+      // 多行：用SUM公式
+      var checkHoursStart = groupStartRow + 2;  // Excel起始行
+      var checkHoursEnd = groupStartRow + group.rows.length + 1;  // Excel结束行
+      var checkHoursFormula = 'SUM(L' + checkHoursStart + ':L' + checkHoursEnd + ')';
+      data[groupStartRow][12] = { f: checkHoursFormula };
+    }
     
-    // 日期列合并（如果多行）
+    // 姓名列合并（如果同一日期+姓名有多行）
     if (group.rows.length > 1) {
       var startRow = groupStartRow + 1;  // Excel中的起始行（+1是因为表头占第0行）
       var endRow = groupStartRow + group.rows.length;  // Excel中的结束行
-      merges.push({ s: { r: startRow, c: 0 }, e: { r: endRow, c: 0 } });
-    }
-    
-    // 姓名列合并（同一日期下相同姓名连续的行）
-    var nameStartIdx = groupStartRow;  // Excel中的起始行索引
-    var currentName = group.rows[0].userName;
-    for (var i = 1; i <= group.rows.length; i++) {
-      if (i === group.rows.length || group.rows[i].userName !== currentName) {
-        // 如果有多行相同姓名，添加合并
-        var sameNameCount = i - (nameStartIdx - groupStartRow);
-        if (sameNameCount > 1) {
-          var nameStartRow = nameStartIdx + 1;  // Excel中的起始行
-          var nameEndRow = groupStartRow + i;   // Excel中的结束行
-          merges.push({ s: { r: nameStartRow, c: 1 }, e: { r: nameEndRow, c: 1 } });
-        }
-        if (i < group.rows.length) {
-          nameStartIdx = groupStartRow + i;
-          currentName = group.rows[i].userName;
-        }
-      }
-    }
-    
-    // 合并实际工时列合并
-    if (group.rows.length > 1) {
-      var startRow = groupStartRow + 1;
-      var endRow = groupStartRow + group.rows.length;
+      merges.push({ s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } });
+      
+      // 合并实际工时列合并（同一日期+姓名）
       merges.push({ s: { r: startRow, c: 9 }, e: { r: endRow, c: 9 } });
-    }
-    
-    // 人天列合并
-    if (group.rows.length > 1) {
-      var startRow = groupStartRow + 1;
-      var endRow = groupStartRow + group.rows.length;
+      
+      // 人天列合并（同一日期+姓名）
       merges.push({ s: { r: startRow, c: 10 }, e: { r: endRow, c: 10 } });
-    }
-    
-    // 核对工时列合并
-    if (group.rows.length > 1) {
-      var startRow = groupStartRow + 1;
-      var endRow = groupStartRow + group.rows.length;
+      
+      // 核对工时列合并（同一日期+姓名）
       merges.push({ s: { r: startRow, c: 12 }, e: { r: endRow, c: 12 } });
     }
+    // 单行情况：不合并，但值已经在上面设置了
   });
   
   var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
@@ -928,39 +906,36 @@ function exportAllUsersToXlsx() {
     var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
     data[groupStartRow][10] = { f: personDaysFormula };
     
-    // 设置核对工时公式（合并，公式 =SUM(L开始:L结束)，L是标准工时列）
-    var checkHoursStart = groupStartRow + 2;  // Excel起始行
-    var checkHoursEnd = groupStartRow + group.rows.length + 1;  // Excel结束行
-    var checkHoursFormula = 'SUM(L' + checkHoursStart + ':L' + checkHoursEnd + ')';
-    data[groupStartRow][12] = { f: checkHoursFormula };
+    // 计算核对工时：如果是单行，直接用标准工时值；如果是多行，用SUM公式
+    if (group.rows.length === 1) {
+      // 单行：直接计算标准工时值
+      var row = group.rows[0];
+      var standardHoursValue = (row.hours === '按实际') ? row.actualHours : (row.hours * row.qty);
+      data[groupStartRow][12] = standardHoursValue;
+    } else {
+      // 多行：用SUM公式
+      var checkHoursStart = groupStartRow + 2;  // Excel起始行
+      var checkHoursEnd = groupStartRow + group.rows.length + 1;  // Excel结束行
+      var checkHoursFormula = 'SUM(L' + checkHoursStart + ':L' + checkHoursEnd + ')';
+      data[groupStartRow][12] = { f: checkHoursFormula };
+    }
     
     // 姓名列合并（如果同一日期+姓名有多行）
     if (group.rows.length > 1) {
       var startRow = groupStartRow + 1;  // Excel中的起始行（+1是因为表头占第0行）
       var endRow = groupStartRow + group.rows.length;  // Excel中的结束行
       merges.push({ s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } });
-    }
-    
-    // 合并实际工时列合并（同一日期+姓名）
-    if (group.rows.length > 1) {
-      var startRow = groupStartRow + 1;
-      var endRow = groupStartRow + group.rows.length;
+      
+      // 合并实际工时列合并（同一日期+姓名）
       merges.push({ s: { r: startRow, c: 9 }, e: { r: endRow, c: 9 } });
-    }
-    
-    // 人天列合并（同一日期+姓名）
-    if (group.rows.length > 1) {
-      var startRow = groupStartRow + 1;
-      var endRow = groupStartRow + group.rows.length;
+      
+      // 人天列合并（同一日期+姓名）
       merges.push({ s: { r: startRow, c: 10 }, e: { r: endRow, c: 10 } });
-    }
-    
-    // 核对工时列合并（同一日期+姓名）
-    if (group.rows.length > 1) {
-      var startRow = groupStartRow + 1;
-      var endRow = groupStartRow + group.rows.length;
+      
+      // 核对工时列合并（同一日期+姓名）
       merges.push({ s: { r: startRow, c: 12 }, e: { r: endRow, c: 12 } });
     }
+    // 单行情况：不合并，但值已经在上面设置了
   });
   
   // 处理日期列合并（按日期分组，不管姓名）
