@@ -84,7 +84,6 @@
       <span>共 <strong id="totalItems">0</strong> 项</span>
       <div class="summary-actions">
         <button class="btn-export" onclick="exportToXlsx()">导出Excel</button>
-        <button class="btn-export-all" onclick="exportAllUsersToXlsx()">多人合并导出</button>
         <button class="btn-import" onclick="document.getElementById('importFile').click()">导入Excel</button>
         <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="importFromXlsx(this)">
         <button class="btn-clear" onclick="clearStats()">清空</button>
@@ -136,6 +135,7 @@
     <div class="message" id="adminMessage"></div>
     <div style="margin:12px 0;">
       <button class="btn-save" onclick="saveData();showMsg('adminMessage','数据已保存','success')">保存数据</button>
+      <button class="btn-export-all" onclick="exportAllUsersToXlsx()">多人合并导出</button>
     </div>
     <a href="#" onclick="lockAdmin()" class="admin-link">← 锁定并返回登录页</a>
   </div>
