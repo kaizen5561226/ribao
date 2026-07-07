@@ -840,12 +840,13 @@ function exportAllUsersSimple() {
     return parseDate(a.date) - parseDate(b.date);
   });
   
-  // 按日期分组（与单人导出逻辑一致）
+  // 按日期+姓名分组（与单人导出逻辑一致，但需要区分不同用户）
   var groups = [];
   var currentGroup = null;
   sortedRows.forEach(function(row) {
-    if (!currentGroup || currentGroup.date !== row.date) {
-      currentGroup = { date: row.date, rows: [] };
+    var groupKey = row.date + '|' + row.userName;
+    if (!currentGroup || currentGroup.key !== groupKey) {
+      currentGroup = { key: groupKey, date: row.date, userName: row.userName, rows: [] };
       groups.push(currentGroup);
     }
     currentGroup.rows.push(row);
