@@ -827,41 +827,114 @@ function exportToXlsx() {
   showMsg('homeMessage', '导出成功: ' + fileName, 'success');
 }
 
-// ============ 全量导出Excel（简单汇总所有用户数据） ============
+// ============ 全量导出Excel（汇总所有用户的单人导出结果） ============
 function exportAllUsersSimple() {
   if (statsRows.length === 0) { showMsg('adminMessage', '没有数据可导出', 'error'); return; }
   if (typeof XLSX === 'undefined') { showMsg('adminMessage', '导出库加载中，请刷新页面后重试', 'error'); return; }
   
-  // 表头
-  var headers = ['日期', '姓名', '服务大类', '服务子类', '工作内容', '交付产出', '量纲标准工时h', '数量/次数', '实际工时'];
+  // 表头：与单人导出一致
+  var headers = ['日期', '姓名', '服务大类', '服务子类', '工作内容', '交付产出', '量纲标准工时h', '数量/次数', '实际工时', '合并实际工时', '人天', '标准工时', '核对工时'];
   
   // 按日期排序所有数据
   var sortedRows = [...statsRows].sort(function(a, b) {
     return parseDate(a.date) - parseDate(b.date);
   });
   
-  // 构建导出数据（简单扁平化，不合并）
-  var data = [];
+  // 按日期分组（与单人导出逻辑一致）
+  var groups = [];
+  var currentGroup = null;
   sortedRows.forEach(function(row) {
-    data.push([
-      row.date,
-      row.userName,
-      row.cat2,
-      row.cat3,
-      row.name,
-      row.output,
-      row.hours,
-      row.qty,
-      row.actualHours
-    ]);
+    if (!currentGroup || currentGroup.date !== row.date) {
+      currentGroup = { date: row.date, rows: [] };
+      groups.push(currentGroup);
+    }
+    currentGroup.rows.push(row);
+  });
+  
+  // 构建导出数据（使用公式对象，与单人导出一致）
+  var data = [];
+  var merges = [];
+  var rowIndex = 0;
+  
+  groups.forEach(function(group) {
+    var groupStartRow = rowIndex;
+    var actualSum = 0;
+    
+    group.rows.forEach(function(row, idx) {
+      actualSum += row.actualHours;
+      
+      // Excel行号（+1是因为表头占第0行）
+      var excelRow = rowIndex + 2;  // 第2行开始是数据
+      
+      // 计算标准工时：IF(G="按实际",I,G*H)
+      var standardHoursFormula = 'IF(G' + excelRow + '="按实际",I' + excelRow + ',G' + excelRow + '*H' + excelRow + ')';
+      
+      data.push([
+        row.date,
+        row.userName,
+        row.cat2,
+        row.cat3,
+        row.name,
+        row.output,
+        row.hours,
+        row.qty,
+        row.actualHours,
+        '',  // 合并实际工时先清空
+        '',  // 人天先清空
+        { f: standardHoursFormula },  // 标准工时用公式
+        ''   // 核对工时先清空
+      ]);
+      rowIndex++;
+    });
+    
+    // 设置合并实际工时小计（第一行）
+    data[groupStartRow][9] = actualSum;
+    
+    // 设置人天和核对工时：单行时直接用公式引用L列，多行时用SUM公式
+    var personDaysFormula = 'J' + (groupStartRow + 2) + '/8';
+    data[groupStartRow][10] = { f: personDaysFormula };  // 人天始终用公式
+    
+    if (group.rows.length === 1) {
+      // 单行：核对工时直接引用L列的值（避免SUM(Lx:Lx)的问题）
+      var checkHoursCell = 'L' + (groupStartRow + 2);
+      data[groupStartRow][12] = { f: checkHoursCell };  // 核对工时 = Lx
+    } else {
+      // 多行：用SUM公式
+      var checkHoursStart = groupStartRow + 2;  // Excel起始行
+      var checkHoursEnd = groupStartRow + group.rows.length + 1;  // Excel结束行
+      var checkHoursFormula = 'SUM(L' + checkHoursStart + ':L' + checkHoursEnd + ')';
+      data[groupStartRow][12] = { f: checkHoursFormula };  // 核对工时用公式
+    }
+    
+    // 姓名列合并（如果同一日期+姓名有多行）
+    if (group.rows.length > 1) {
+      var startRow = groupStartRow + 1;  // Excel中的起始行（+1是因为表头占第0行）
+      var endRow = groupStartRow + group.rows.length;  // Excel中的结束行
+      merges.push({ s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } });
+      
+      // 合并实际工时列合并（同一日期+姓名）
+      merges.push({ s: { r: startRow, c: 9 }, e: { r: endRow, c: 9 } });
+      
+      // 人天列合并（同一日期+姓名）
+      merges.push({ s: { r: startRow, c: 10 }, e: { r: endRow, c: 10 } });
+      
+      // 核对工时列合并（同一日期+姓名）
+      merges.push({ s: { r: startRow, c: 12 }, e: { r: endRow, c: 12 } });
+    }
   });
   
   var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
   
-  // 设置列宽（9列）
+  // 设置合并
+  if (merges.length > 0) {
+    ws['!merges'] = merges;
+  }
+  
+  // 设置列宽（13列，与单人导出一致）
   ws['!cols'] = [
     {wch:14},{wch:10},{wch:16},{wch:20},
-    {wch:30},{wch:30},{wch:12},{wch:10},{wch:10}
+    {wch:30},{wch:30},{wch:12},{wch:10},{wch:10},{wch:12},
+    {wch:10},{wch:12},{wch:12}
   ];
   
   var wb = XLSX.utils.book_new();
