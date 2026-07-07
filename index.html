@@ -464,7 +464,7 @@ function addStatsRow() {
     hours: stdHours,
     qty: qty,
     actualHours: 0,
-    mergedHours: Math.round(stdHours * qty * 100) / 100
+    mergedHours: Math.round(stdHours * qty * 100) / 100  // 默认使用 hours * qty
   });
   
   document.getElementById('itemQty').value = '';
@@ -642,7 +642,10 @@ function updateQty(index, val) {
   if (isNaN(qty) || qty <= 0) return;
   var row = statsRows[index];
   row.qty = qty;
-  row.mergedHours = Math.round((row.hours * qty + row.actualHours) * 100) / 100;
+  // 重新计算合并实际工时：如果actualHours为0或空，使用hours*qty；否则使用actualHours
+  row.mergedHours = (row.actualHours === 0 || row.actualHours === '' || isNaN(row.actualHours))
+    ? Math.round(row.hours * qty * 100) / 100
+    : row.actualHours;
   renderStats();
 }
 
@@ -651,7 +654,8 @@ function updateActualHours(index, val) {
   if (isNaN(v) || v < 0) return;
   var row = statsRows[index];
   row.actualHours = Math.round(v * 100) / 100;
-  row.mergedHours = Math.round((row.hours * row.qty + row.actualHours) * 100) / 100;
+  // 用户手动调整了actualHours，直接使用actualHours作为合并实际工时
+  row.mergedHours = row.actualHours;
   renderStats();
 }
 
